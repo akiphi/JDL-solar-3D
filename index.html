@@ -113,12 +113,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-
       <p class="sub">À cocher au fil des réponses (les coches restent sur cet appareil).</p></div>
     <ol class="qs">
       <li><label><input type="checkbox" id="q1"> <b>Pompe à chaleur monophasée ou triphasée :</b> laquelle retenir, et quel onduleur est compatible ? En monophasé, deux onduleurs de 8 kW en parallèle suffisent-ils ? En triphasé, l'onduleur de 15 kW accepte-t-il au moins 7 à 8 kW par phase (charge déséquilibrée) ?</label></li>
-      <li><label><input type="checkbox" id="q2"> <b>Pompe monophasée de 16 kW (MHC-V16W/D2N8-B) au lieu de 1 × 22 kW ou 2 × 12 kW :</b> prix, disponibilité et délai ? Estimation : environ 6 000 à 7 000 $ HT après remise? Le 14 kW (V14W) est-il aussi envisageable ?</label></li>
-      <li><label><input type="checkbox" id="q3"> <b>Bilan thermique pièce par pièce :</b> quelle puissance de pompe faut-il réellement, avec les menuiseries prévues ?</label></li>
+      <li><label><input type="checkbox" id="q2"> <b>Bilan thermique pièce par pièce :</b> quelle puissance de pompe faut-il réellement, avec les menuiseries prévues ?</label></li>
+      <li><label><input type="checkbox" id="q3"> <b>Pompe monophasée de 16 kW (MHC-V16W/D2N8-B) au lieu de 1 × 22 kW ou 2 × 12 kW :</b> prix, disponibilité et délai ? Estimation : environ 6 000 à 7 000 $ HT après remise? Le 14 kW (V14W) est-il aussi envisageable ?</label></li>
       <li><label><input type="checkbox" id="q4"> <b>Résistance d'appoint de la pompe :</b> peut-on la désactiver ou limiter la puissance pour ne pas surcharger l'onduleur ?</label></li>
       <li><label><input type="checkbox" id="q5"> <b>Disposition des panneaux :</b> étude d'ombrage (acrotères, édicule d'escalier) et la production mois par mois (PVGIS).</label></li>
-      <li><label><input type="checkbox" id="q6"> <b>Batteries :</b> 25 à 30 kWh, basse tension 48 V ou haute tension selon l'onduleur ? Marque, garantie, nombre de cycles, emplacement au sous-sol.</label></li>
-      <li><label><input type="checkbox" id="q7"> <b>Unités extérieures :</b> où placer la pompe à chaleur et les splits pour libérer le toit (façade ou sol) ?</label></li>
+      <li><label><input type="checkbox" id="q6"> <b>Batteries :</b> 30 kWh, basse tension 48 V ou haute tension selon l'onduleur ? Marque, garantie, nombre de cycles, emplacement au sous-sol.</label></li>
+      <li><label><input type="checkbox" id="q7"> <b>Unités extérieures :</b> où placer la pompe à chaleur et les splits si on doit libérer le toit (façade ou sol) ?</label></li>
       <li><label><input type="checkbox" id="q8"> <b>Appoint :</b> entrée générateur séparée du réseau EDL, et option pergola à prévoir plus tard (câbles, marge onduleur) ?</label></li>
     </ol>
   </section>
@@ -365,7 +365,7 @@ function updateSun(){const s=sun(state.day,state.t),v=sunVec(s);
   scene.background=sky;renderer.setClearColor(sky);}
 
 /* ---------- camera presets ---------- */
-const PRESETS={free:[[20,5,26],[0,-4,1]],top:[[0,34,0.01],[0,0,0]],south:[[0,-4,34],[0,-4.5,0]],east:[[32,-2,0],[0,-4,0]],roof:[[4.7,1.65,0.63],[-4,0.9,0.63]],west:[[-30,-3,1],[0,-4,0]]};
+const PRESETS={free:[[-28,22,30],[0,-4,1]],top:[[0,34,0.01],[0,0,0]],south:[[0,-4,34],[0,-4.5,0]],east:[[32,-2,0],[0,-4,0]],roof:[[4.7,1.65,0.63],[-4,0.9,0.63]],west:[[-30,-3,1],[0,-4,0]]};
 let tween=null;
 function goCam(k){const [p,t]=PRESETS[k];tween={p0:camera.position.clone(),t0:controls.target.clone(),p1:new THREE.Vector3(...p),t1:new THREE.Vector3(...t),start:performance.now()};}
 camera.position.set(...PRESETS.free[0]);
