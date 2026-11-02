@@ -1,0 +1,450 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Toit de Jeddayel en 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a compact control deck above a full-width 3D viewport; readout strip under the scene */
+:root{
+  --ground:#E6E9E6; --surface:#F7F8F6; --ink:#1C2530; --muted:#5A6570; --line:#C6CCC7; --sun:#E3951A; --focus:#2F6FB3; --c-south:#B5521C; --c-ew:#17786A; --c-s15:#7A4AA8; --c-d15:#A8325A; --c-d20:#8A6A10;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-data:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#11171E; --surface:#19212A; --ink:#E4E9EE; --muted:#97A3AF; --line:#2B3744; --sun:#F2B23C; --focus:#7FB2F0; --c-south:#E57C40; --c-ew:#3DB5A3; --c-s15:#B08BE0; --c-d15:#E57A9E; --c-d20:#D9B84A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ground:#11171E; --surface:#19212A; --ink:#E4E9EE; --muted:#97A3AF; --line:#2B3744; --sun:#F2B23C; --focus:#7FB2F0; --c-south:#E57C40; --c-ew:#3DB5A3; --c-s15:#B08BE0; --c-d15:#E57A9E; --c-d20:#D9B84A; color-scheme:dark}
+body{background:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1280px;margin:0 auto;padding-block:16px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--f-display);font-weight:600;margin:0;font-size:clamp(24px,3.6vw,34px);line-height:1.05}
+.eyebrow{font-family:var(--f-data);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lead{margin:4px 0 0;color:var(--muted);max-width:80ch}
+.controls{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.group{display:flex;flex-direction:column;gap:5px;min-width:0}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{font:inherit;font-size:14px;background:transparent;color:var(--ink);border:0;border-left:1px solid var(--line);padding:6px 9px;cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.months button{min-width:44px;padding:6px 6px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.check{display:flex;gap:7px;align-items:center;font-size:14px;cursor:pointer}
+.time{flex:1 1 260px;display:flex;gap:10px;align-items:center}
+.play{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:6px 12px;cursor:pointer;min-width:84px}
+.time input{flex:1;min-width:0;accent-color:var(--sun)}
+.clock{font-family:var(--f-data);font-size:18px;font-variant-numeric:tabular-nums;min-width:52px}
+.stage{position:relative;height:min(74vh,760px);min-height:380px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#9fb8cf}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.hint{position:absolute;left:12px;bottom:10px;font-size:12px;color:#fff;background:rgba(10,16,24,.55);padding:4px 9px;border-radius:6px;pointer-events:none}
+.readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.r .v{font-family:var(--f-data);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.r .l{font-size:12px;color:var(--muted);line-height:1.3}
+.note{color:var(--muted);font-size:14px;margin:0;max-width:95ch}
+.err{padding:24px;color:#fff}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card h2{font-family:var(--f-display);font-weight:600;margin:0;font-size:20px}
+.card .sub{margin:2px 0 0;color:var(--muted);font-size:14px}
+.key{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px;vertical-align:1px}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:14px}
+.legend b{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.mbar{cursor:pointer}
+.qs{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;max-width:90ch}
+.qs label{cursor:pointer;display:block}
+.qs input{accent-color:var(--c-ew);margin-right:4px}
+.qs li:has(input:checked) label{color:var(--muted);text-decoration:line-through}
+.notes{color:var(--muted);font-size:14px;margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;max-width:95ch}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Maison JDL264 · Jeddayel, 34,1° N · modèle 3D du toit</div>
+    <h1>Toit de Jeddayel en 3D</h1>
+    <p class="lead">Faites tourner la maison au doigt ou à la souris, zoomez, et choisissez la disposition des panneaux, le mois et l'heure. Les ombres sont calculées en temps réel par le soleil de Jeddayel.</p>
+  </header>
+
+  <section class="controls" aria-label="Réglages">
+    <div class="group"><span class="eyebrow">Disposition</span>
+      <div class="seg" id="laySeg">
+        <button type="button" id="l-south" data-k="south" aria-pressed="false">Sud 30°</button>
+        <button type="button" id="l-s15" data-k="s15" aria-pressed="false">Sud 15°</button>
+        <button type="button" id="l-d15" data-k="d15" aria-pressed="false">Blocs 15°</button>
+        <button type="button" id="l-d20" data-k="d20" aria-pressed="true">Blocs 20°</button>
+        <button type="button" id="l-ew" data-k="ew" aria-pressed="false">Est-ouest</button>
+      </div></div>
+    <div class="group"><span class="eyebrow">Vue</span>
+      <div class="seg" id="camSeg">
+        <button type="button" id="c-free" data-c="free" aria-pressed="true">3D</button>
+        <button type="button" id="c-top" data-c="top" aria-pressed="false">Dessus</button>
+        <button type="button" id="c-south" data-c="south" aria-pressed="false">Depuis le sud</button>
+        <button type="button" id="c-east" data-c="east" aria-pressed="false">Depuis l'est</button>
+        <button type="button" id="c-west" data-c="west" aria-pressed="false">Depuis l'ouest</button>
+        <button type="button" id="c-roof" data-c="roof" aria-pressed="false">Dans le passage</button>
+      </div></div>
+    <div class="group"><span class="eyebrow">Mois (journée du 21)</span><div class="seg months" id="mSeg"></div></div>
+    <div class="group"><label class="eyebrow" for="par">Acrotères : <span id="parv">0,6 m</span></label>
+      <input type="range" id="par" min="0" max="1.2" step="0.1" value="0.6"></div>
+    <label class="check" for="pergola"><input type="checkbox" id="pergola"> Pergola solaire</label>
+    <div class="group time">
+      <button type="button" class="play" id="play">Pause</button>
+      <input type="range" id="t" min="4.5" max="19.5" step="0.05" value="9" aria-label="Heure solaire">
+      <span class="clock" id="clock">09:00</span>
+    </div>
+  </section>
+
+  <div class="stage" id="stage"><span class="hint">Glisser : tourner · Pincer ou molette : zoomer · Deux doigts ou clic droit : déplacer</span></div>
+
+  <section class="readout" id="readout"></section>
+
+  <section class="card chart">
+    <div><h2>Production au fil de la journée</h2>
+      <p class="sub">Journée de ciel clair, en kW. La surface sous chaque courbe est l'énergie produite.</p></div>
+    <div class="legend" id="legend"></div>
+    <div style="overflow-x:auto"><svg id="chart" viewBox="0 0 680 250" role="img" aria-label="Courbes de production des cinq dispositions"></svg></div>
+  </section>
+
+  <section class="card chart">
+    <div><h2>Mois par mois</h2>
+      <p class="sub">Production d'une journée de ciel clair le 21 de chaque mois, en kWh. Touchez un mois pour l'afficher sur la maison.</p></div>
+    <div style="overflow-x:auto"><svg id="months" viewBox="0 0 680 230" role="img" aria-label="Production par mois des cinq dispositions"></svg></div>
+  </section>
+
+  <section class="card" id="questions">
+    <div><h2>Questions à poser à l'entrepreneur</h2>
+      <p class="sub">À cocher au fil des réponses (les coches restent sur cet appareil).</p></div>
+    <ol class="qs">
+      <li><label><input type="checkbox" id="q1"> <b>Pompe à chaleur monophasée ou triphasée :</b> laquelle retenir, et quel onduleur est compatible ? En monophasé, deux onduleurs de 8 kW en parallèle suffisent-ils ? En triphasé, l'onduleur de 15 kW accepte-t-il au moins 7 à 8 kW par phase (charge déséquilibrée) ?</label></li>
+      <li><label><input type="checkbox" id="q2"> <b>Pompe monophasée de 16 kW (MHC-V16W/D2N8-B) au lieu de 1 × 22 kW ou 2 × 12 kW :</b> prix, disponibilité et délai ? Notre estimation : environ 6 000 à 7 000 $ HT après remise. Le 14 kW (V14W) est-il aussi envisageable ?</label></li>
+      <li><label><input type="checkbox" id="q3"> <b>Bilan thermique pièce par pièce :</b> quelle puissance de pompe faut-il réellement, avec les menuiseries prévues ? 16 kW suffit-il ?</label></li>
+      <li><label><input type="checkbox" id="q4"> <b>Résistance d'appoint de la pompe :</b> peut-on la désactiver ou limiter la puissance pour ne pas surcharger l'onduleur ?</label></li>
+      <li><label><input type="checkbox" id="q5"> <b>Disposition des panneaux :</b> plein sud à 15° en 3 rangées ou est-ouest à 12° ? Fournir une étude d'ombrage (acrotères, édicule d'escalier) et la production mois par mois (PVGIS).</label></li>
+      <li><label><input type="checkbox" id="q6"> <b>Batteries :</b> 25 à 30 kWh, basse tension 48 V ou haute tension selon l'onduleur ? Marque, garantie, nombre de cycles, emplacement au sous-sol.</label></li>
+      <li><label><input type="checkbox" id="q7"> <b>Unités extérieures :</b> où placer la pompe à chaleur et les splits pour libérer le toit (façade ou sol) ?</label></li>
+      <li><label><input type="checkbox" id="q8"> <b>Appoint :</b> entrée générateur séparée du réseau EDL, et option pergola à prévoir plus tard (câbles, marge onduleur) ?</label></li>
+    </ol>
+  </section>
+
+  <ul class="notes">
+    <li>Modèle simplifié par ciel clair, panneaux de 580 W, heure solaire (midi = soleil plein sud). Par temps couvert, la production réelle de décembre est nettement plus basse : environ 28 kWh/jour en moyenne pour la disposition est-ouest.</li>
+    <li>Dimensions mesurées sur la planche M-102 (±5 %). Les ombres sont calculées point par point : chaque panneau est découpé en petites cellules, et on vérifie pour chacune si un autre panneau ou un acrotère se trouve entre elle et le soleil. La hauteur réelle des acrotères est à relever sur les coupes ; l'édicule d'escalier et les unités extérieures ne sont pas modélisés.</li>
+    <li>Une cellule à l'ombre fait perdre plus que sa surface (les cellules d'un panneau sont en série) : le modèle compte 1,6 fois la part ombrée en perte sur le rayonnement direct.</li>
+    <li>Les quatre coins du toit sont laissés libres pour les descentes d'eau pluviale.</li>
+    <li>Position du soleil : formules astronomiques classiques (déclinaison de Cooper, angle horaire) pour Jeddayel, latitude 34,13° N, comme dans le <a href="https://gml.noaa.gov/grad/solcalc/">calculateur solaire de la NOAA</a>. Ensoleillement par ciel clair : masse d'air de Kasten et Young et modèle de Meinel. Pour des chiffres réels moyens, voir <a href="https://re.jrc.ec.europa.eu/pvg_tools/fr/">PVGIS</a> (Commission européenne).</li>
+  </ul>
+  <p class="note">Ombres affichées par le moteur 3D ; chiffres de production calculés par le même modèle que l'animation à plat (ciel clair, panneaux de 580 W, heure solaire). Maison redessinée d'après les plans M-401/M-402 et les rendus de l'architecte, toute en blanc : bloc principal sur deux niveaux (4,26 m au rez-de-chaussée), partie nord de plain-pied avec toit-terrasse, portique sud de 4 m. Volumes à l'échelle des plans, ouvertures approximatives. La position du grand chêne est approximative. La pergola solaire remplace les lames du portique sud.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(()=>{
+if(!window.THREE){document.getElementById("stage").innerHTML='<p class="err">Le moteur 3D n\'a pas pu se charger. Rechargez la page.</p>';return;}
+const rad=Math.PI/180, deg=180/Math.PI, LAT=34.13*rad;
+const MONTHS=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const DOY=[21,52,80,111,141,172,202,233,264,294,325,355];
+const decl=m=>23.44*Math.sin(rad*360/365*(284+DOY[m]));
+const PW=1.13, PL=2.28, WP=0.58;
+const state={view:"both",day:11,pergola:false,parapet:0.6,t:9,playing:!matchMedia("(prefers-reduced-motion: reduce)").matches};
+
+/* ---------- geometry (x = est, y = sud, mètres ; z = hauteur) ---------- */
+function mkSouth(tilt,pitch,nRows){
+  const P=[], a=tilt*rad, dp=PL*Math.cos(a), rise=PL*Math.sin(a), gap=pitch-dp;
+  for(let r=0;r<nRows;r++){const yl=10.4-r*pitch;for(let i=0;i<8;i++){const x=0.55+i*(PW+0.02), yh=yl-dp;
+    P.push({c:[[x,yl,.3],[x+PW,yl,.3],[x+PW,yh,.3+rise],[x,yh,.3+rise]],n:[0,-Math.sin(a),Math.cos(a)],row:r,yl,dp,rise,gap});}}
+  return P;}
+function mkEW(){
+  const P=[], a=12*rad, w=PW*Math.cos(a), r=PW*Math.sin(a);
+  [0.35,2.55,5.25,7.45].forEach((x0,k)=>{for(let j=0;j<4;j++){const y0=0.85+j*(PL+0.02), y1=y0+PL;
+    if(!(k===0&&(j===0||j===3))) P.push({c:[[x0,y0,.2],[x0+w,y0,.2+r],[x0+w,y1,.2+r],[x0,y1,.2]],n:[-Math.sin(a),0,Math.cos(a)]});
+    if(!(k===3&&(j===0||j===3))) P.push({c:[[x0+w,y0,.2+r],[x0+2*w,y0,.2],[x0+2*w,y1,.2],[x0+w,y1,.2+r]],n:[Math.sin(a),0,Math.cos(a)]});}});
+  return P;}
+function mkPergola(){
+  const P=[], a=10*rad, d=PW*Math.cos(a), r=PW*Math.sin(a);
+  for(let row=0;row<3;row++){const yh=11.05+row*1.13, yl=yh+d;
+    for(let i=0;i<4;i++){const x=0.45+i*2.3;
+      P.push({c:[[x,yl,0.05],[x+PL,yl,0.05],[x+PL,yh,0.05+r],[x,yh,0.05+r]],n:[0,-Math.sin(a),Math.cos(a)],perg:true});}}
+  return P;}
+function mkRack(tilt,lows,deep){const P=[],a=tilt*rad,dp=PL*Math.cos(a),rise=PL*Math.sin(a);
+  lows.forEach(yl0=>{for(let s=0;s<deep;s++){const yl=yl0-s*dp,zl=.3+s*rise;for(let i=0;i<8;i++){const x=0.55+i*(PW+0.02),yh=yl-dp;
+    P.push({c:[[x,yl,zl],[x+PW,yl,zl],[x+PW,yh,zl+rise],[x,yh,zl+rise]],n:[0,-Math.sin(a),Math.cos(a)]});}}});return P;}
+const FP=2*PL*Math.cos(15*rad), FP20=2*PL*Math.cos(20*rad);
+const LAYOUT={south:mkSouth(30,4.6,2),s15:mkSouth(15,3.6,3),d15:mkRack(15,[10.4,0.45+FP],2),d20:mkRack(20,[10.4,0.45+FP20],2),ew:mkEW()}, PERG=mkPergola();
+const KEYS=["south","s15","d15","d20","ew"];
+const NAMES={south:"Sud 30°",s15:"Sud 15°",d15:"Blocs 15°",d20:"Blocs 20°",ew:"Est-ouest"};
+
+/* ---------- sun & power ---------- */
+function sun(day,t){const d=decl(day)*rad,h=(t-12)*15*rad;
+  const U=Math.sin(LAT)*Math.sin(d)+Math.cos(LAT)*Math.cos(d)*Math.cos(h);
+  const E=-Math.cos(d)*Math.sin(h), N=Math.cos(LAT)*Math.sin(d)-Math.sin(LAT)*Math.cos(d)*Math.cos(h);
+  return {E,N,U,alt:Math.asin(U)*deg,az:(Math.atan2(E,N)*deg+360)%360};}
+function irr(s){if(s.U<=0.01)return null;const am=1/(s.U+0.50572*Math.pow(s.alt+6.07995,-1.6364));
+  const dni=1353*Math.pow(0.7,Math.pow(am,0.678));return {dni,dhi:0.11*dni+15*s.U};}
+const dot=(n,s)=>n[0]*s.E+n[1]*s.N+n[2]*s.U;
+/* ---------- ray-cast shading: each panel cell checks whether a panel or parapet blocks the sun ---------- */
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], dt=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+function mkOcc(c0,e1,e2,self){const n=cr(e1,e2),a=dt(e1,e1),b=dt(e1,e2),d=dt(e2,e2);
+  const pts=[c0,[c0[0]+e1[0],c0[1]+e1[1],c0[2]+e1[2]],[c0[0]+e2[0],c0[1]+e2[1],c0[2]+e2[2]],[c0[0]+e1[0]+e2[0],c0[1]+e1[1]+e2[1],c0[2]+e1[2]+e2[2]]];
+  return {c0,e1,e2,n,a,b,d,det:a*d-b*b,self,pts,
+    x0:Math.min(...pts.map(p=>p[0])),x1:Math.max(...pts.map(p=>p[0])),y0:Math.min(...pts.map(p=>p[1])),y1:Math.max(...pts.map(p=>p[1])),zmax:Math.max(...pts.map(p=>p[2]))};}
+function prep(p){p.o=mkOcc(p.c[0],sub(p.c[1],p.c[0]),sub(p.c[3],p.c[0]),p);
+  let n=p.o.n,l=Math.hypot(...n);if(n[2]<0)l=-l;p.nh=n.map(v=>v/l);
+  p.l1=Math.hypot(...p.o.e1);p.l2=Math.hypot(...p.o.e2);}
+function walls(h){const L=10.25,D=11;return [
+  mkOcc([0,0,0],[L,0,0],[0,0,h],null),mkOcc([0,D,0],[L,0,0],[0,0,h],null),
+  mkOcc([0,0,0],[0,D,0],[0,0,h],null),mkOcc([L,0,0],[0,D,0],[0,0,h],null)];}
+let OCC={}, WALLS=[];
+function buildOcc(){WALLS=state.parapet>0?walls(state.parapet):[];
+  KEYS.forEach(k=>OCC[k]=LAYOUT[k].map(p=>p.o).concat(WALLS));OCC.perg=PERG.map(p=>p.o);}
+const sunDir=s=>[s.E,-s.N,s.U];
+function blocked(P,d,occ,self){
+  for(const o of occ){if(o.self===self||P[2]>=o.zmax)continue;
+    const tr=(o.zmax-P[2])/d[2],ex=P[0]+tr*d[0],ey=P[1]+tr*d[1];
+    if(Math.max(P[0],ex)<o.x0||Math.min(P[0],ex)>o.x1||Math.max(P[1],ey)<o.y0||Math.min(P[1],ey)>o.y1)continue;
+    const den=dt(o.n,d);if(Math.abs(den)<1e-9)continue;
+    const t=dt(o.n,sub(o.c0,P))/den;if(t<=1e-4)continue;
+    const w=[P[0]+t*d[0]-o.c0[0],P[1]+t*d[1]-o.c0[1],P[2]+t*d[2]-o.c0[2]];
+    const p1=dt(w,o.e1),p2=dt(w,o.e2),u=(o.d*p1-o.b*p2)/o.det,v=(o.a*p2-o.b*p1)/o.det;
+    if(u>=0&&u<=1&&v>=0&&v<=1)return true;}
+  return false;}
+function cellPt(p,u,v){const o=p.o;return [0,1,2].map(i=>o.c0[i]+u*o.e1[i]+v*o.e2[i]+0.004*p.nh[i]);}
+function shadeFrac(p,d,occ,nu,nv){let k=0;
+  for(let i=0;i<nu;i++)for(let j=0;j<nv;j++)if(blocked(cellPt(p,(i+.5)/nu,(j+.5)/nv),d,occ,p))k++;
+  return k/(nu*nv);}
+function panelKW(p,s,I,d,occ){if(!I)return 0;const c=Math.max(0,dot(p.n,s));
+  const f=c>0?shadeFrac(p,d,occ,2,4):0;
+  return WP*(I.dni*c*(1-Math.min(1,f*1.6))+I.dhi*(1+p.n[2])/2)/1000*0.82;}
+function layoutKW(key,s,withPerg){const I=irr(s);if(!I)return 0;const d=sunDir(s);
+  let k=0;LAYOUT[key].forEach(p=>k+=panelKW(p,s,I,d,OCC[key]));
+  if(withPerg)PERG.forEach(p=>k+=panelKW(p,s,I,d,OCC.perg));return k;}
+function shadeNow(key){const s=sun(state.day,state.t);if(s.U<=0.01)return null;const d=sunDir(s);
+  let a=0,n=0;LAYOUT[key].forEach(p=>{if(dot(p.n,s)>0){a+=shadeFrac(p,d,OCC[key],3,6);n++;}});return n?a/n:0;}
+Object.values(LAYOUT).flat().concat(PERG).forEach(prep);buildOcc();
+
+state.day=11;state.t=9;state.layout="d20";state.cam="free";
+const KEY_ALL=KEYS;
+
+/* ---------- three.js scene ---------- */
+const stage=document.getElementById("stage");
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(45,1,0.1,400);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.target.set(0,-4,1);controls.maxPolarAngle=Math.PI*0.495;controls.minDistance=4;controls.maxDistance=90;
+
+const HOUSE_H=9.1, CX=5.125, CZ=4.8; // centre of the house footprint
+const T=([x,y,z])=>new THREE.Vector3(x-CX,z,y-CZ);
+
+const hemi=new THREE.HemisphereLight(0xdfeaf5,0x6b6a55,0.55);scene.add(hemi);
+const sunL=new THREE.DirectionalLight(0xfff1dc,1.1);sunL.castShadow=true;
+sunL.shadow.mapSize.set(2048,2048);const sc=sunL.shadow.camera;sc.left=-18;sc.right=18;sc.top=18;sc.bottom=-18;sc.near=1;sc.far=90;
+sunL.shadow.bias=-0.0004;sunL.shadow.normalBias=0.02;
+scene.add(sunL);scene.add(sunL.target);
+
+const mat=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:0.9,metalness:0},o));
+const add=(m,cast=true,recv=true)=>{m.castShadow=cast;m.receiveShadow=recv;scene.add(m);return m;};
+// ground
+const ground=add(new THREE.Mesh(new THREE.PlaneGeometry(140,140),mat(0x7d9a52)),false,true);
+ground.rotation.x=-Math.PI/2;ground.position.y=-HOUSE_H;
+// sea hint to the west
+const sea=new THREE.Mesh(new THREE.PlaneGeometry(60,140),mat(0x4f86a8,{roughness:0.35}));sea.rotation.x=-Math.PI/2;sea.position.set(-70,-HOUSE_H+0.02,0);scene.add(sea);
+// ---------- house (after plans M-401/M-402 and the architect's renders, all white) ----------
+const white=mat(0xf2f0eb),white2=mat(0xe4e0d7),frameM=mat(0xebe5d8),glass=mat(0x1f3346,{roughness:0.15,metalness:0.5}),wood=mat(0xa8713f,{roughness:0.7}),dark=mat(0x2a2d31);
+const railGlass=new THREE.MeshStandardMaterial({color:0xcfe3ee,transparent:true,opacity:0.28,roughness:0.1});
+function B(x0,x1,y0,y1,z0,z1,m,cast=true){const g=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,z1-z0,y1-y0),m);
+  g.position.copy(T([(x0+x1)/2,(y0+y1)/2,(z0+z1)/2]));g.castShadow=cast;g.receiveShadow=true;scene.add(g);return g;}
+// levels (m, relative to the main roof top): ground, ground-floor floor, first-floor floor
+const G=-HOUSE_H, GF=-8.65, FF=-4.4;
+// grid lines on the plans, in roof-model coordinates (y grows to the south)
+const Y1=-4.85, Y2=0.55, Y3=3.35, Y4=10.45, Y5=14.45, XC=6.1;
+// main two-storey block (grid 2 to 4)
+B(0,10.25,Y2,Y4,GF,0,white);
+B(-0.2,10.45,-0.2,11.0,-0.3,0,white2);                         // roof slab edge
+// north single-storey block (grid 1 to 2), roof terrace accessible from the first floor
+B(0.4,9.8,Y1,Y2,G,FF,white);
+B(0.3,9.9,Y1-0.1,Y2,FF-0.3,FF,white2);
+B(0.3,9.9,Y1-0.1,Y1+0.1,FF,FF+0.7,white2);B(0.3,0.5,Y1-0.1,Y2,FF,FF+0.7,white2);B(9.7,9.9,Y1-0.1,Y2,FF,FF+0.7,white2);
+B(0.5,9.7,Y1+0.1,Y1+0.3,FF,FF+0.08,mat(0x5f7d3c),false);         // green edge
+// plinth, terrace and steps on the south
+B(-0.6,10.85,Y4,Y5+0.6,G,GF,white2);
+B(1.6,5.4,Y5+0.6,Y5+1.0,G,GF-0.12,white2);B(1.6,5.4,Y5+1.0,Y5+1.4,G,GF-0.24,white2);B(1.6,5.4,Y5+1.4,Y5+1.8,G,GF-0.36,white2);
+B(-0.62,-0.58,Y2,Y5+0.6,G,GF+0.05,dark);                        // dark retaining wall on the west
+// south glazing: ground floor 9 m × 3 m, first floor behind the balconies
+B(0.65,9.6,Y4-0.03,Y4+0.03,GF,GF+3.0,glass,false);B(0.6,9.65,Y4-0.02,Y4+0.05,GF+3.0,FF-0.4,white2);
+B(0.65,9.6,Y4-0.03,Y4+0.03,FF,FF+3.0,glass,false);
+// portico: three columns at the front, beams at the top, balconies
+[[0,0.6],[XC-0.3,XC+0.3],[9.65,10.25]].forEach(([a,b])=>B(a,b,Y5-0.6,Y5,GF,0,frameM));
+B(0,10.25,Y5-0.6,Y5,-0.75,0,frameM);
+[[0,0.6],[XC-0.3,XC+0.3],[9.65,10.25]].forEach(([a,b])=>B(a,b,Y4,Y5,-0.75,0,frameM));
+B(0,10.25,Y4,Y5,FF-0.45,FF-0.05,frameM,true);                    // first-floor frame beam level
+B(0.6,XC-0.3,Y4,Y4+1.2,FF-0.4,FF,white2);B(XC+0.3,9.65,Y4,Y5-0.6,FF-0.4,FF,white2);
+B(0.6,XC-0.3,Y4+1.15,Y4+1.2,FF,FF+1.0,railGlass,false);B(-0.4,XC-0.3,Y4+1.1,Y4+1.3,FF+0.95,FF+1.08,wood);
+B(XC+0.3,9.65,Y5-0.66,Y5-0.6,FF,FF+1.0,railGlass,false);B(XC+0.3,10.6,Y5-0.75,Y5-0.55,FF+0.95,FF+1.08,wood);
+const louvers=new THREE.Group();scene.add(louvers);
+[[0.6,XC-0.3],[XC+0.3,9.65]].forEach(([a,b])=>{for(let y=Y4+0.3;y<Y5-0.7;y+=0.3){const g=new THREE.Mesh(new THREE.BoxGeometry(b-a,0.24,0.07),frameM);
+  g.position.copy(T([(a+b)/2,y,-0.17]));g.castShadow=g.receiveShadow=true;louvers.add(g);}});
+// west facade (x = 0): covered entrance under a projecting box, stair glazing above, windows
+B(-0.85,0,Y2,Y3,FF-0.6,FF+2.4,white2);                         // projecting box
+B(-0.02,0.02,Y2+0.3,Y3-0.3,FF+2.5,-0.7,glass,false);             // stair glazing above the box
+B(0.0,0.6,Y2+0.2,Y3-0.2,GF,FF-0.6,mat(0x8f8a80));                // recessed entrance (shadowed)
+B(0.58,0.62,Y2+1.0,Y2+1.9,GF,GF+2.4,wood,false);                 // front door
+B(-0.02,0.02,4.0,5.1,GF,GF+3.0,glass,false);B(-0.02,0.02,8.9,10.0,GF,GF+3.0,glass,false);
+B(-0.02,0.02,5.3,5.75,FF+0.9,FF+2.5,glass,false);B(-0.02,0.02,5.95,6.8,FF+0.9,FF+2.5,glass,false);
+B(-0.8,0,5.2,7.0,G,G+0.55,dark);B(-0.8,0,8.2,10.0,G,G+0.55,dark);   // planters
+// east facade (x = 10.25)
+B(10.23,10.27,5.8,8.7,GF,GF+2.6,glass,false);                    // living / dining window
+B(10.23,10.27,4.4,4.7,GF,GF+3.2,mat(0x9fe0e0,{roughness:0.3}),false); // glass-block strip
+B(10.23,10.27,1.0,2.9,FF+0.6,FF+3.0,glass,false);B(10.23,10.27,6.85,8.15,FF+1.0,FF+2.4,glass,false);
+// north facade of the first floor: large glazing onto the roof terrace
+B(5.5,9.2,Y2-0.03,Y2+0.03,FF,FF+3.0,glass,false);B(2.0,2.95,Y2-0.03,Y2+0.03,FF+1.0,FF+2.2,glass,false);
+// north block openings (bedroom, kitchen, entrance)
+[[1.6,2.6],[6.8,7.8]].forEach(([a,b])=>B(a,b,Y1-0.02,Y1+0.02,G+1.1,G+2.4,glass,false));B(4.2,5.1,Y1-0.02,Y1+0.02,G,G+2.3,wood,false);
+B(0.38,0.42,Y1+1.6,Y1+3.1,G+1.0,G+2.4,glass,false);B(9.78,9.82,Y1+1.4,Y1+2.9,G+1.0,G+2.4,glass,false);
+// old oak (approximate position, north-west near the street)
+const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.6,3.6,8),mat(0x5b4632));trunk.position.copy(T([-4,-7,G+1.8]));trunk.castShadow=true;scene.add(trunk);
+const crown=new THREE.Mesh(new THREE.SphereGeometry(4.2,14,10),mat(0x4b6233,{roughness:1}));crown.scale.set(1.35,0.75,1.15);crown.position.copy(T([-4,-7,G+6]));crown.castShadow=crown.receiveShadow=true;scene.add(crown);
+
+// compass labels
+function label(text,pos,size=1.4){const c=document.createElement("canvas");c.width=128;c.height=128;const g=c.getContext("2d");
+  g.fillStyle="rgba(20,28,38,.72)";g.beginPath();g.arc(64,64,58,0,7);g.fill();g.fillStyle="#fff";g.font="600 64px system-ui,sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText(text,64,68);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:true}));s.scale.set(size,size,1);s.position.copy(pos);s.renderOrder=5;scene.add(s);return s;}
+label("N",T([5.125,-13,-HOUSE_H+0.8]));label("S",T([5.125,22,-HOUSE_H+0.8]));label("E",T([19,4.8,-HOUSE_H+0.8]));label("O",T([-10,4.8,-HOUSE_H+0.8]));
+label("mer",T([-17,4.8,-HOUSE_H+1]),2.2);
+
+// parapets
+const parGroup=new THREE.Group();scene.add(parGroup);const parMat=mat(0xd6d8d0);
+function buildParapets(){parGroup.clear();const h=state.parapet;if(h<=0)return;
+  [[5.125,-0.1,10.65,0.2],[5.125,11.1,10.65,0.2],[-0.1,5.5,0.2,11.4],[10.35,5.5,0.2,11.4]].forEach(([x,y,w,d])=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),parMat);m.position.copy(T([x,y,h/2]));m.castShadow=m.receiveShadow=true;parGroup.add(m);});}
+
+// panel textures
+function cellTex(cols,rows){const c=document.createElement("canvas");c.width=cols*20;c.height=rows*20;const g=c.getContext("2d");
+  g.fillStyle="#16243a";g.fillRect(0,0,c.width,c.height);g.strokeStyle="rgba(170,190,215,.45)";g.lineWidth=1.2;
+  for(let i=0;i<=cols;i++){g.beginPath();g.moveTo(i*20,0);g.lineTo(i*20,c.height);g.stroke();}
+  for(let j=0;j<=rows;j++){g.beginPath();g.moveTo(0,j*20);g.lineTo(c.width,j*20);g.stroke();}
+  g.strokeStyle="rgba(220,230,240,.8)";g.lineWidth=3;g.strokeRect(1.5,1.5,c.width-3,c.height-3);
+  const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;}
+const frameMat=mat(0xb8bec6,{metalness:0.6,roughness:0.4});
+const topPortrait=new THREE.MeshStandardMaterial({map:cellTex(6,12),roughness:0.32,metalness:0.25});
+const topLandscape=new THREE.MeshStandardMaterial({map:cellTex(12,6),roughness:0.32,metalness:0.25});
+const legMat=mat(0x8a929b,{metalness:0.5,roughness:0.5});
+const panelGroup=new THREE.Group();scene.add(panelGroup);
+function panelMesh(p){const c0=T(p.c[0]),c1=T(p.c[1]),c3=T(p.c[3]);
+  const e1=c1.clone().sub(c0),e2=c3.clone().sub(c0);const l1=e1.length(),l2=e2.length();
+  const u=e1.clone().normalize();let v=e2.clone().normalize();let n=new THREE.Vector3().crossVectors(u,v);
+  if(n.y<0){v.negate();n.negate();}
+  const geo=new THREE.BoxGeometry(l1,l2,0.04);const top=l1<l2?topPortrait:topLandscape;
+  const m=new THREE.Mesh(geo,[frameMat,frameMat,frameMat,frameMat,top,frameMat]);
+  const center=c0.clone().add(e1.clone().multiplyScalar(0.5)).add(e2.clone().multiplyScalar(0.5)).add(n.clone().multiplyScalar(0.02));
+  m.matrixAutoUpdate=false;m.matrix.makeBasis(u,v,n).setPosition(center);m.castShadow=m.receiveShadow=true;return m;}
+function leg(base,topPt){const h=topPt.y-base.y;if(h<0.05)return null;const g=new THREE.CylinderGeometry(0.03,0.03,h,6);const m=new THREE.Mesh(g,legMat);m.position.set(topPt.x,base.y+h/2,topPt.z);m.castShadow=true;return m;}
+function buildPanels(){panelGroup.clear();
+  const list=LAYOUT[state.layout].concat(state.pergola?PERG:[]);
+  list.forEach(p=>{panelGroup.add(panelMesh(p));
+    if(!p.perg){[0,1,2,3].forEach(i=>{const tp=T(p.c[i]);const b=leg(new THREE.Vector3(tp.x,0,tp.z),tp);if(b)panelGroup.add(b);});}});
+  louvers.visible=!state.pergola;}
+
+// sun disc + path
+const sunDisc=new THREE.Mesh(new THREE.SphereGeometry(0.9,24,16),new THREE.MeshBasicMaterial({color:0xffc04a}));scene.add(sunDisc);
+let pathLine=null;const SUN_R=32;
+function sunVec(s){return new THREE.Vector3(s.E,s.U,-s.N).normalize();}
+function buildPath(){if(pathLine){scene.remove(pathLine);pathLine.geometry.dispose();}
+  const pts=[];for(let t=4;t<=20;t+=0.1){const s=sun(state.day,t);if(s.U>-0.02)pts.push(sunVec(s).multiplyScalar(SUN_R));}
+  pathLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineDashedMaterial({color:0xffc04a,dashSize:0.8,gapSize:0.6,transparent:true,opacity:0.8}));
+  pathLine.computeLineDistances();scene.add(pathLine);}
+
+const skyDay=new THREE.Color(0x9fc3e3),skyLow=new THREE.Color(0xe9b98a),skyNight=new THREE.Color(0x101a2a);
+function updateSun(){const s=sun(state.day,state.t),v=sunVec(s);
+  sunDisc.position.copy(v.clone().multiplyScalar(SUN_R));sunDisc.visible=s.U>-0.02;
+  sunL.position.copy(v.clone().multiplyScalar(40));sunL.target.position.set(0,0,0);
+  const a=Math.max(0,s.U);sunL.intensity=s.U>0?0.3+0.9*Math.min(1,a*2.2):0;sunL.castShadow=s.U>0.01;
+  hemi.intensity=0.15+0.4*Math.min(1,Math.max(0,s.U+0.1)*2.5);
+  const sky=s.U<=0?skyNight.clone().lerp(skyLow,Math.max(0,1+s.U*12)):skyLow.clone().lerp(skyDay,Math.min(1,s.U*3.5));
+  scene.background=sky;renderer.setClearColor(sky);}
+
+/* ---------- camera presets ---------- */
+const PRESETS={free:[[20,5,26],[0,-4,1]],top:[[0,34,0.01],[0,0,0]],south:[[0,-4,34],[0,-4.5,0]],east:[[32,-2,0],[0,-4,0]],roof:[[4.7,1.65,0.63],[-4,0.9,0.63]],west:[[-30,-3,1],[0,-4,0]]};
+let tween=null;
+function goCam(k){const [p,t]=PRESETS[k];tween={p0:camera.position.clone(),t0:controls.target.clone(),p1:new THREE.Vector3(...p),t1:new THREE.Vector3(...t),start:performance.now()};}
+camera.position.set(...PRESETS.free[0]);
+
+/* ---------- readout ---------- */
+const fmt=(v,d=1)=>v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
+let dayE=0;
+function computeDay(){let e=0;for(let t=4.5;t<=19.5001;t+=1/6)e+=layoutKW(state.layout,sun(state.day,t),state.pergola)/6;dayE=e;}
+function renderReadout(){const s=sun(state.day,state.t),now=layoutKW(state.layout,s,state.pergola),sh=shadeNow(state.layout);
+  const n=LAYOUT[state.layout].length+(state.pergola?PERG.length:0);
+  const hMax=Math.max(...LAYOUT[state.layout].flatMap(p=>p.c.map(c=>c[2])));
+  document.getElementById("readout").innerHTML=
+   `<div class="r"><div class="v">${n} · ${fmt(n*WP)} kWc</div><div class="l">panneaux · puissance</div></div>
+    <div class="r"><div class="v">${fmt(hMax,2)} m</div><div class="l">hauteur max. au-dessus du toit</div></div>
+    <div class="r"><div class="v">${s.U>0?fmt(s.alt,0)+"°":"–"}</div><div class="l">hauteur du soleil</div></div>
+    <div class="r"><div class="v">${fmt(now)} kW</div><div class="l">production maintenant</div></div>
+    <div class="r"><div class="v">${fmt(dayE,0)} kWh</div><div class="l">ce jour, par ciel clair</div></div>
+    <div class="r"><div class="v">${sh===null?"–":fmt(sh*100,0)+" %"}</div><div class="l">panneaux à l'ombre</div></div>`;
+  const hh=Math.floor(state.t),mm=Math.round((state.t-hh)*60)%60;
+  document.getElementById("clock").textContent=`${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;document.getElementById("t").value=state.t;}
+
+
+/* ---------- charts (same model as the flat animation) ---------- */
+let curves={},monthly=[];
+function computeCurves(){curves={};KEYS.forEach(k=>{const pts=[];let e=0;
+  for(let t=4.5;t<=19.5001;t+=1/12){const v=layoutKW(k,sun(state.day,t),state.pergola);pts.push([t,v]);e+=v/12;}
+  curves[k]={pts,e,peak:Math.max(...pts.map(p=>p[1]))};});dayE=curves[state.layout].e;}
+function computeMonthly(){monthly=MONTHS.map((_,m)=>{const o={};KEYS.forEach(k=>{let e=0;for(let t=4.5;t<=19.5001;t+=1/4)e+=layoutKW(k,sun(m,t),state.pergola)/4;o[k]=e;});return o;});}
+const dimK=k=>k!==state.layout;
+function renderLegend(){document.getElementById("legend").innerHTML=KEYS.map(k=>`<span style="opacity:${dimK(k)?0.6:1}"><span class="key" style="background:var(--c-${k})"></span>${NAMES[k]} : <b>${fmt(curves[k].e,0)} kWh</b></span>`).join("");}
+function renderChart(){const svg=document.getElementById("chart"),w=680,h=250,m={l:40,r:14,t:12,b:30};
+  const tx=t=>m.l+(t-4.5)/15*(w-m.l-m.r),ymax=Math.max(4,Math.ceil(Math.max(...KEYS.map(k=>curves[k].peak))/2)*2),ty=v=>h-m.b-v/ymax*(h-m.t-m.b);let o="";
+  for(let v=0;v<=ymax;v+=ymax>12?4:2)o+=`<line x1="${m.l}" x2="${w-m.r}" y1="${ty(v)}" y2="${ty(v)}" stroke="var(--line)"/><text x="${m.l-8}" y="${ty(v)}" fill="var(--muted)" font-size="11" text-anchor="end" dominant-baseline="middle" font-family="var(--f-data)">${v}</text>`;
+  for(let t=6;t<=18;t+=2)o+=`<text x="${tx(t)}" y="${h-10}" fill="var(--muted)" font-size="11" text-anchor="middle" font-family="var(--f-data)">${t}h</text>`;
+  o+=`<text x="${m.l-8}" y="${m.t-2}" fill="var(--muted)" font-size="10" text-anchor="end" font-family="var(--f-data)">kW</text>`;
+  KEYS.forEach(k=>{const d=dimK(k),line=curves[k].pts.map((p,i)=>(i?"L":"M")+tx(p[0]).toFixed(1)+","+ty(p[1]).toFixed(1)).join("");
+    o+=`<path d="${line}L${tx(19.5)},${ty(0)}L${tx(4.5)},${ty(0)}Z" fill="var(--c-${k})" opacity="${d?0.03:0.12}"/><path d="${line}" fill="none" stroke="var(--c-${k})" stroke-width="${d?1.2:2.6}" opacity="${d?0.5:1}"/>`;});
+  const x=tx(state.t);o+=`<line x1="${x}" x2="${x}" y1="${m.t}" y2="${h-m.b}" stroke="var(--sun)" stroke-width="1.5" stroke-dasharray="3 3"/>`;
+  KEYS.forEach(k=>{const v=layoutKW(k,sun(state.day,state.t),state.pergola);o+=`<circle cx="${x}" cy="${ty(v)}" r="4" fill="var(--surface)" stroke="var(--c-${k})" stroke-width="2"/>`;});
+  svg.innerHTML=o;}
+function renderMonths(){const svg=document.getElementById("months"),w=680,h=230,m={l:40,r:10,t:12,b:30};
+  const ymax=Math.ceil(Math.max(...monthly.map(o=>Math.max(...KEYS.map(k=>o[k]))))/20)*20,ty=v=>h-m.b-v/ymax*(h-m.t-m.b),bw=(w-m.l-m.r)/12;let o="";
+  for(let v=0;v<=ymax;v+=20)o+=`<line x1="${m.l}" x2="${w-m.r}" y1="${ty(v)}" y2="${ty(v)}" stroke="var(--line)"/><text x="${m.l-8}" y="${ty(v)}" fill="var(--muted)" font-size="11" text-anchor="end" dominant-baseline="middle" font-family="var(--f-data)">${v}</text>`;
+  monthly.forEach((d,i)=>{const x0=m.l+i*bw,sel=i===state.day,bar=bw*0.15;
+    if(sel)o+=`<rect x="${x0+1}" y="${m.t}" width="${bw-2}" height="${h-m.t-m.b}" fill="var(--sun)" opacity="0.14" rx="3"/>`;
+    KEYS.forEach((k,j)=>{const x=x0+bw*(0.09+j*0.167);o+=`<rect x="${x}" y="${ty(d[k])}" width="${bar}" height="${ty(0)-ty(d[k])}" fill="var(--c-${k})" opacity="${dimK(k)?0.35:1}" rx="1.5"><title>${MONTHS[i]} – ${NAMES[k]} : ${Math.round(d[k])} kWh</title></rect>`;});
+    o+=`<text x="${x0+bw/2}" y="${h-10}" fill="${sel?"var(--ink)":"var(--muted)"}" font-weight="${sel?600:400}" font-size="11" text-anchor="middle" font-family="var(--f-data)">${MONTHS[i].replace(".","")}</text><rect class="mbar" data-m="${i}" x="${x0}" y="${m.t}" width="${bw}" height="${h-m.t}" fill="transparent"/>`;});
+  svg.innerHTML=o;}
+function refreshAll(){computeCurves();computeMonthly();renderMonths();renderLegend();renderChart();}
+document.getElementById("months").addEventListener("click",e=>{const r=e.target.closest(".mbar");if(r)document.getElementById("m-"+r.dataset.m).click();});
+document.querySelectorAll(".qs input").forEach(cb=>{try{cb.checked=localStorage.getItem("jdl-"+cb.id)==="1";}catch(e){}
+  cb.addEventListener("change",()=>{try{localStorage.setItem("jdl-"+cb.id,cb.checked?"1":"0");}catch(e){}});});
+
+/* ---------- controls ---------- */
+const press=(id,btn)=>document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",b===btn));
+document.getElementById("laySeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.layout=b.dataset.k;press("laySeg",b);buildPanels();dayE=curves[state.layout].e;renderLegend();renderChart();renderMonths();renderReadout();});
+document.getElementById("camSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;press("camSeg",b);goCam(b.dataset.c);});
+const mSeg=document.getElementById("mSeg");mSeg.innerHTML=MONTHS.map((n,i)=>`<button type="button" id="m-${i}" data-m="${i}" aria-pressed="${i===state.day}">${n}</button>`).join("");
+const bounds=()=>{let a=null,b=null;for(let t=4.5;t<=19.5;t+=0.05)if(sun(state.day,t).U>0){if(a===null)a=t;b=t;}return [a-0.2,b+0.2];};
+mSeg.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;state.day=+b.dataset.m;press("mSeg",b);const [a,z]=bounds();if(state.t<a||state.t>z)state.t=a+0.4;buildPath();computeCurves();renderLegend();renderChart();renderMonths();updateSun();renderReadout();});
+const par=document.getElementById("par");
+par.addEventListener("input",()=>{state.parapet=+par.value;document.getElementById("parv").textContent=fmt(state.parapet)+" m";buildOcc();buildParapets();renderReadout();});
+par.addEventListener("change",()=>{refreshAll();renderReadout();});
+document.getElementById("pergola").addEventListener("change",e=>{state.pergola=e.target.checked;buildPanels();refreshAll();renderReadout();});
+document.getElementById("t").addEventListener("input",e=>{state.t=+e.target.value;updateSun();renderReadout();renderChart();});
+const pb=document.getElementById("play");const sync=()=>pb.textContent=state.playing?"Pause":"Lecture";
+pb.addEventListener("click",()=>{state.playing=!state.playing;sync();});
+
+/* ---------- loop ---------- */
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(stage);
+let last=performance.now(),acc=0;
+function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;
+  if(state.playing){const [a,z]=bounds();state.t+=dt*0.9;if(state.t>z)state.t=a;updateSun();acc+=dt;if(acc>0.15){renderReadout();renderChart();acc=0;}}
+  if(tween){const k=Math.min(1,(now-tween.start)/900),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    camera.position.lerpVectors(tween.p0,tween.p1,e);controls.target.lerpVectors(tween.t0,tween.t1,e);if(k>=1)tween=null;}
+  controls.update();renderer.render(scene,camera);requestAnimationFrame(loop);}
+buildParapets();buildPanels();buildPath();refreshAll();updateSun();resize();sync();renderReadout();requestAnimationFrame(loop);
+})();
+</script>
+
+</body></html>
